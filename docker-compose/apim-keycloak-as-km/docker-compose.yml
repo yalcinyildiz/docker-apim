@@ -62,7 +62,7 @@ services:
       - ./conf/postgres/apim/scripts/v4_2_0:/docker-entrypoint-initdb.d/
       - ./conf/postgres/data:/var/lib/postgresql/data
     environment:
-      # Environment Variables expecially for Postgres
+      # Environment Variables especially for Postgres
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
