@@ -12,8 +12,48 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-version: '2.4'
+version: '3.7'
 services:
+  mysql:
+    image: mysql:5.7.34
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: keycloak
+      MYSQL_USER: keycloak
+      MYSQL_PASSWORD: pa55word
+      MYSQL_ROOT_PASSWORD: root
+    volumes:
+      - ./conf/mysql/scripts:/docker-entrypoint-initdb.d
+      - ./conf/mysql/conf/my.cnf:/etc/mysql/my.cnf
+      - ./conf/mysql/data:/var/lib/mysql
+    ulimits:
+      nofile:
+        soft: 20000
+        hard: 40000
+    command: [--ssl=0]
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-uroot", "-proot"]
+      interval: 30s
+      timeout: 60s
+      retries: 5
+      start_period: 80s
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    command: start-dev
+    environment:
+      KC_DB: mysql
+      KC_DB_URL_HOST: mysql
+      KC_DB_PASSWORD: pa55word
+      KC_DB_USERNAME: keycloak
+      KC_DB_SCHEMA: keycloak
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
   postgres_srv:
     image: postgres:16.2
     restart: always
@@ -39,31 +79,8 @@ services:
       - "5432:5432"
     expose:
       - "5432"
-  keycloak:
-    image: quay.io/keycloak/keycloak:24.0
-    command: start-dev
-    environment:
-      KC_DB: postgres
-      KC_DB_URL_HOST: postgres_srv
-      KC_DB_URL_DATABASE: postgres
-      KC_DB_PASSWORD: postgres
-      KC_DB_USERNAME: postgres
-      KC_DB_SCHEMA: public
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: admin
-    ports:
-      - "8080:8080"
-    depends_on:
-      postgres_srv:
-        condition: service_healthy
   api-manager:
     build: ./dockerfiles/apim
-#    healthcheck:
-#      test: ["CMD", "nc", "-z","localhost", "9443"]
-#      start_period: 20s
-#      interval: 10s
-#      timeout: 5s
-#      retries: 5
     depends_on:
       postgres_srv:
         condition: service_healthy
@@ -77,24 +94,3 @@ services:
       - "9443"
       - "8280"
       - "8243"
-#  micro-integrator:
-#    build: ./dockerfiles/mi
-#    healthcheck:
-#      test: ["CMD", "nc", "-z", "localhost", "8253"]
-#      start_period: 300s
-#      interval: 10s
-#      timeout: 3s
-#      retries: 5
-#    depends_on:
-#      postgres_srv:
-#        condition: service_healthy
-#      api-manager:
-#        condition: service_healthy
-#    volumes:
-#      - ./conf/mi:/home/wso2carbon/wso2-config-volume
-#    ports:
-#      - "8290:8290"
-#      - "8253:8253"
-#    expose:
-#      - "8290"
-#      - "8253"
