@@ -1,0 +1,122 @@
+# Copyright (c) 2021, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+version: '2.4'
+services:
+  postgres_keycloak:
+    image: postgres:16.2
+    command: postgres -c 'max_connections=200' && postgres -c 'shared_buffers=24MB'
+    volumes:
+      - ./conf/postgres/keycloak/data:/var/lib/postgresql/data
+    environment:
+      # Environment Variables expecially for Postgres
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak_u
+      POSTGRES_PASSWORD: keycloak_p
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-q", "-d", "keycloak", "-U", "keycloak_u" ]
+      start_period: 30s
+      interval: 5s
+      timeout: 3s
+      retries: 6
+    ports:
+      - "5433:5432"
+    expose:
+      - "5433"
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0
+    command: start-dev
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres_keycloak:5433/keycloak
+      #KC_DB_URL_HOST: postgres_keycloak
+      #KC_DB_URL_DATABASE: keycloak
+      KC_DB_PASSWORD: keycloak_p
+      KC_DB_USERNAME: keycloak_u
+      KC_DB_SCHEMA: public
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres_keycloak:
+        condition: service_healthy
+  postgres_apim_svr:
+    image: postgres:16.2
+    restart: always
+    command: postgres -c 'max_connections=200' && postgres -c 'shared_buffers=24MB'
+    volumes:
+      - ./conf/postgres/apim/scripts:/docker-entrypoint-initdb.d/
+      - ./conf/postgres/apim/data:/var/lib/postgresql/data
+    environment:
+      # Environment Variables expecially for Postgres
+      POSTGRES_DB: postgres
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      APP_DB_NAME: apim_db
+      APP_DB_USER: apim_u
+      APP_DB_PASS: apim_p
+    healthcheck:
+      #  test: "exit 0"
+      test: [ "CMD", "pg_isready", "-q", "-d", "postgres", "-U", "postgres" ]
+      start_period: 30s
+      interval: 5s
+      timeout: 3s
+      retries: 6
+    ports:
+      - "5432:5432"
+    expose:
+      - "5432"
+  api-manager:
+    build: ./dockerfiles/apim
+    healthcheck:
+      test: ["CMD", "nc", "-z","localhost", "9443"]
+      start_period: 20s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    depends_on:
+      postgres_apim_svr:
+        condition: service_healthy
+    volumes:
+      - ./conf/apim:/home/wso2carbon/wso2-config-volume
+    ports:
+      - "9443:9443"
+      - "8280:8280"
+      - "8243:8243"
+    expose:
+      - "9443"
+      - "8280"
+      - "8243"
+  micro-integrator:
+    build: ./dockerfiles/mi
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "8253"]
+      start_period: 120s
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    depends_on:
+      postgres_apim_svr:
+        condition: service_healthy
+      api-manager:
+        condition: service_healthy
+    volumes:
+      - ./conf/mi:/home/wso2carbon/wso2-config-volume
+    ports:
+      - "8290:8290"
+      - "8253:8253"
+    expose:
+      - "8290"
+      - "8253"
