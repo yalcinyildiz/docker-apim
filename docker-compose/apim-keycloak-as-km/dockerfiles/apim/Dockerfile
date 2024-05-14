@@ -17,7 +17,8 @@
 # ------------------------------------------------------------------------
 
 # set base Docker image to WSO2 API Manager Docker image with latest WSO2 Updates
-FROM wso2/wso2am:4.0.0-alpine
+# FROM wso2/wso2am:4.0.0-alpine
+FROM yalcinyildiz/wso2am:4.2.0
 LABEL maintainer="WSO2 Docker Maintainers <dev@wso2.org>"
 
 # build arguments for external artifacts
@@ -26,7 +27,7 @@ ARG USER=wso2carbon
 ARG USER_HOME=/home/${USER}
 # build arguments for WSO2 product installation
 ARG WSO2_SERVER_NAME=wso2am
-ARG WSO2_SERVER_VERSION=4.0.0
+ARG WSO2_SERVER_VERSION=4.2.0
 ARG WSO2_SERVER=${WSO2_SERVER_NAME}-${WSO2_SERVER_VERSION}
 ARG WSO2_SERVER_HOME=${USER_HOME}/${WSO2_SERVER}
 # add MySQL JDBC connector to server home as a third party library

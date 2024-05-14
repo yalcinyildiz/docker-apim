@@ -254,3 +254,7 @@ notification_endpoint = "https://localhost:${mgt.transport.https.port}/internal/
 username = "${admin.username}"
 password = "${admin.password}"
 'header.X-WSO2-KEY-MANAGER' = "default"
+
+#[[apim.jwt.issuer]]
+#name = "http://keycloak:8080/realms/master"
+#jwks.url = "http://keycloak:8080/realms/master/protocol/openid-connect/certs"
