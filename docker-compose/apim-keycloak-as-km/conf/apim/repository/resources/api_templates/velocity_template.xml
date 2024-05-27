@@ -367,7 +367,10 @@ $out_sequences.get("$resource.getUriTemplate()").get($uri)
     Switch the EcaAuthenticationHandler handler with default authentication handler for APIs which are having `custom_authenticator=eca`
 ******#
 #if( ( $handler.className == "org.wso2.carbon.apimgt.gateway.handlers.security.APIAuthenticationHandler" ) && ( $customEcaAuthHandler == 1 ) )
-<handler class="com.etiya.apim.handlers.security.EcaAuthenticationHandler" />
+<handler class="com.etiya.apim.handlers.security.EcaAuthenticationHandler">
+    <property name="jwtissuer" value="http://localhost:8080/realms/master" type="STRING"/>
+    <property name="jwksuri" value="http://keycloak:8080/realms/master/protocol/openid-connect/certs" type="STRING"/>
+</handler>
 #else
 <handler xmlns="http://ws.apache.org/ns/synapse" class="$handler.className">
     #if($handler.hasProperties())
